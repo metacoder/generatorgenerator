@@ -1,25 +1,28 @@
 package de.metacoder.generatorgenerator.fixtures;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 public class A implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 
-	private Collection<B> b;
+	private B b;
+	private String c;
+	
+	public String getC() {
+		return c;
+	}
 
-	public Collection<B> getB() {
+	public void setC(String c) {
+		this.c = c;
+	}
+
+	public B getB() {
 		return b;
 	}
 
-	public void setB(Collection<B> b) {
+	public void setB(B b) {
 		this.b = b;
-	}
-
-	@Override
-	public String toString() {
-		return "A [b=" + b + "]";
 	}
 	
 }

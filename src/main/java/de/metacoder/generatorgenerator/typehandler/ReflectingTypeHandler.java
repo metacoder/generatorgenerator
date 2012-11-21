@@ -1,13 +1,21 @@
 package de.metacoder.generatorgenerator.typehandler;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class ReflectingTypeHandler extends TypeHandler {
 
-	public ReflectingTypeHandler(CodeGenerator codeGenerator) {
+	private final SequenceLikeVarNameGenerator sequenceLikeVarNameGenerator;
+	private static final Logger LOGGER = Logger.getLogger(ReflectingTypeHandler.class);
+	@Autowired
+	public ReflectingTypeHandler(CodeGenerator codeGenerator, SequenceLikeVarNameGenerator sequenceLikeVarNameGenerator) {
 		super(codeGenerator);
+		this.sequenceLikeVarNameGenerator = sequenceLikeVarNameGenerator;
 	}
+	
+	
 
 	@Override
 	public String generateCode(Object o, String varName) {
@@ -15,26 +23,30 @@ public class ReflectingTypeHandler extends TypeHandler {
 		// TODO check if default constructor exists, assume yes + setter for first version
 		String generatedCode = o.getClass().getSimpleName() + " " + varName + " = new " + o.getClass().getSimpleName() + "();\n";
 		
-		
-		Field[] fields = o.getClass().getDeclaredFields();
-		
-		for(Field field : fields){
-			// first upper
-			String setterName = "set"+field.getName().substring(0,1).toUpperCase() + field.getName().substring(1, field.getName().length());
+		for(Field field : o.getClass().getDeclaredFields()){
 			
+			// first upper
+			final String setterName = "set"+field.getName().substring(0,1).toUpperCase() + field.getName().substring(1, field.getName().length());
 			
 			try {
-				Method m = o.getClass().getMethod(setterName, new Class<?>[]{field.getType()});
+				o.getClass().getMethod(setterName, new Class<?>[]{field.getType()});
 				field.setAccessible(true);
-				final String nestedVarName = field.getName() + "Var"; // TODO lookup if already used;
+				
+				
+				String nestedVarName = sequenceLikeVarNameGenerator.takeVarName(field.getName());
 
 				try {
-				
-					
-					Object nestedObject = field.get(o);
+
+					final Object nestedObject = field.get(o);
 					
 					if(nestedObject != null){
-						generatedCode = generatedCode + codeGenerator.generate(nestedObject, nestedVarName);
+						
+						if(codeGenerator.getReferenceCache().containsKey(nestedObject)){ // detect cyclic reference
+							nestedVarName = codeGenerator.getReferenceCache().get(nestedObject); 
+						} else {
+							generatedCode = generatedCode + codeGenerator.generate(nestedObject, nestedVarName);
+						}
+					
 					} else {
 						generatedCode = generatedCode + field.getType().getSimpleName() + " " + nestedVarName + " = null;\n";
 					}
@@ -47,13 +59,13 @@ public class ReflectingTypeHandler extends TypeHandler {
 				
 				generatedCode = generatedCode + varName + "." + setterName + "("+nestedVarName+");\n"; 
 
-			} catch (NoSuchMethodException e) { // TODO info / debug log ?
-			} catch (SecurityException e) { // TODO info log / Debug log ?
+			} catch (NoSuchMethodException e) {
+				LOGGER.debug("Didn't find setter method for " + o.getClass() + "." + field.getName() + ". Ignoring this field.");
+			} catch (SecurityException e) { 
+				throw new RuntimeException("fatal error while using reflection :(", e);
 			}
 			
 		}
-		
-		// TODO fields.
 		
 		return generatedCode;
 	}

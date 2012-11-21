@@ -1,7 +1,10 @@
 package de.metacoder.generatorgenerator.typehandler;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 public class StringTypeHandler extends TypeHandler {
 
+	@Autowired
 	public StringTypeHandler(CodeGenerator codeGenerator) {
 		super(codeGenerator);
 	}

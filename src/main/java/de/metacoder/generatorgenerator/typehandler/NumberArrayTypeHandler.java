@@ -1,7 +1,10 @@
 package de.metacoder.generatorgenerator.typehandler;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 public class NumberArrayTypeHandler extends TypeHandler {
 
+	@Autowired
 	public NumberArrayTypeHandler(CodeGenerator codeGenerator) {
 		super(codeGenerator);
 	}
@@ -39,7 +42,7 @@ public class NumberArrayTypeHandler extends TypeHandler {
 			}
 		}
 
-		// Todo more comfortable way (string utils join? scala?)
+		// TODO more comfortable way (string utils join? scala?)
 		if(generated.endsWith(",")) {
 			generated = generated.substring(0, generated.length()-1);
 		}
